@@ -1,9 +1,10 @@
 module CourseworkOne where
 
 import Backwords.Types
-import qualified Data.Set as Set
+import qualified Data.Map as Map
 import Backwords.WordList
 
+import Data.Maybe
 import Data.List 
 import Data.Char
 import Data.Ratio
@@ -19,12 +20,6 @@ import Data.Bits (Bits(xor))
 -- ITS ENTIRETY and that you understand everything that is required from a good
 -- solution.
 --------------------------------------------------------------------------------
-
--- Predefining things
-
---vowels = Set.fromList "aeiou"
---consonants = Set.fromList "bcdfghjklmnpqrstvwxyz"
-wordSet =  Set.fromList allWords
 
 
 
@@ -68,7 +63,7 @@ Because all elements of the allWords list are lower case, the toLower function m
 -}
 
 isValidWord :: String -> Bool
-isValidWord x = map toLower x `Set.member` wordSet
+isValidWord x = map toLower x `elem` allWords
 
 {- Ex. 4 - Determining the points value of a letter
 
@@ -96,11 +91,6 @@ scoreWord = foldr ((\y z -> y + 2 * z) . letterValue) 0
 -- Ex. 6:
 -- Get all words that can be formed from the given letters.
 
-subsets :: [a] -> [[a]]
-subsets []  = [[]]
-subsets (x:xs) = [x:y | y <- k] ++ k where 
-    k = subsets xs
-
 canBeFormedFrom :: String -> String -> Bool
 canBeFormedFrom y [] = True
 canBeFormedFrom y (x:xs)
@@ -108,13 +98,10 @@ canBeFormedFrom y (x:xs)
                 | otherwise = False
 
 
-subset' a b = Set.isSubsetOf (Set.fromList b) a
-
 possibleWords :: [Char] -> [String]
---possibleWords x = [ y | y <- allWords, sort y `elem` k] where 
-    --k = subsets (sort x)
---possibleWords x = (Set.filter (subset' (Set.fromList x)) wordSet)
 possibleWords x = filter (canBeFormedFrom x) allWords
+
+
 -- Ex. 7:
 -- Given a set of letters, find the highest scoring word that can be formed from them.
 
@@ -127,6 +114,7 @@ bestWord x
 
 -- Ex. 8:
 -- Given a list of letters, and a word, mark as used all letters in the list that appear in the word.
+
 useTiles :: [Char] -> String -> [Tile]
 useTiles x [] = [Unused y | y <- x]
 useTiles (x:xs) y
@@ -200,7 +188,15 @@ bagPickUp bag
         | otherwise = TakeConsonant
 -}
 
+expectedValue bag rack collection = let
+                        probs = Map.fromList (bagDistribution bag)
+                        testLetter x = toRational (scoreWord(extractJust(bestWord (rack++[x])))) * fromMaybe 0 (Map.lookup x probs)
+                        temp = [testLetter y | y <- collection, y `elem` bag]
+                in 
+                        sum temp / toRational (length temp)
+
 bagPickUp :: [Char] -> [Char] -> Move
+{-
 bagPickUp bag rack
         | (length bag `mod` 5 == 0) && containsVowel bag = TakeVowel
         | (countVowels rack < 3) && containsVowel bag = TakeVowel
@@ -208,6 +204,16 @@ bagPickUp bag rack
         | containsVowel bag = TakeVowel
         | containsConsonant bag = TakeConsonant 
         | otherwise = TakeConsonant
+-}
+bagPickUp bag rack 
+                | countVowels rack >= 4 && containsConsonant bag = TakeConsonant
+                | countConsonants rack >= 6 && containsVowel bag = TakeVowel
+                | containsVowel bag && containsConsonant bag && (expectedValue bag rack consonants > expectedValue bag rack vowels * 0.6) = TakeConsonant
+                | containsVowel bag && containsConsonant bag && (expectedValue bag rack vowels * 0.6 >= expectedValue bag rack consonants) = TakeVowel
+                | containsConsonant bag = TakeConsonant
+                | containsVowel bag = TakeVowel
+                | otherwise = TakeVowel
+
 
 rackPlay rack
 --            | (scoreWord potentialWord <= 30) || (length potentialWord <= 3) = PlayWord (cheapLetters rack 5)
