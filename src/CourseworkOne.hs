@@ -1,15 +1,14 @@
 module CourseworkOne where
 
 import Backwords.Types
+import qualified Data.Set as Set
 import Backwords.WordList
 
 import Data.List 
 import Data.Char
 import Data.Ratio
 import Data.Bits (Bits(xor))
-import Text.ParserCombinators.ReadP (count)
-import Data.Either (partitionEithers)
-import Data.Data (Data(dataCast1))
+
 
 --------------------------------------------------------------------------------
 -- This file is your complete submission for the first coursework of CS141.
@@ -20,6 +19,14 @@ import Data.Data (Data(dataCast1))
 -- ITS ENTIRETY and that you understand everything that is required from a good
 -- solution.
 --------------------------------------------------------------------------------
+
+-- Predefining things
+
+--vowels = Set.fromList "aeiou"
+--consonants = Set.fromList "bcdfghjklmnpqrstvwxyz"
+wordSet =  Set.fromList allWords
+
+
 
 {- Ex. 1 - Give a Display instance for Char
 
@@ -61,7 +68,7 @@ Because all elements of the allWords list are lower case, the toLower function m
 -}
 
 isValidWord :: String -> Bool
-isValidWord x = map toLower x `elem` allWords
+isValidWord x = map toLower x `Set.member` wordSet
 
 {- Ex. 4 - Determining the points value of a letter
 
@@ -94,10 +101,20 @@ subsets []  = [[]]
 subsets (x:xs) = [x:y | y <- k] ++ k where 
     k = subsets xs
 
-possibleWords :: [Char] -> [String]
-possibleWords x = [ y | y <- allWords, sort y `elem` k] where 
-    k = subsets (sort x)
+canBeFormedFrom :: String -> String -> Bool
+canBeFormedFrom y [] = True
+canBeFormedFrom y (x:xs)
+                | x `elem` y = canBeFormedFrom (y\\[x]) xs
+                | otherwise = False
 
+
+subset' a b = Set.isSubsetOf (Set.fromList b) a
+
+possibleWords :: [Char] -> [String]
+--possibleWords x = [ y | y <- allWords, sort y `elem` k] where 
+    --k = subsets (sort x)
+--possibleWords x = (Set.filter (subset' (Set.fromList x)) wordSet)
+possibleWords x = filter (canBeFormedFrom x) allWords
 -- Ex. 7:
 -- Given a set of letters, find the highest scoring word that can be formed from them.
 
